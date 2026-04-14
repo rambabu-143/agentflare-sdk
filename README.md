@@ -1,4 +1,4 @@
-# AgentGuard
+# AgentFlare
 
 Real-time cost observability and guardrails for AI agents.
 
@@ -7,25 +7,24 @@ Track LLM spend, set budget thresholds, and auto-pause agents before they blow u
 ## Install
 
 ```bash
-pip install agentguard
+pip install agentflare
 ```
 
 ## Quick Start
 
 ```python
-from agentguard import AgentGuard, AgentEvent
+from agentguard import AgentFlare, AgentEvent
 
-guard = AgentGuard(
+guard = AgentFlare(
     api_key="ag_...",
     agent_id="my-sales-agent",
     cost_threshold=10.0,          # auto-pause at $10/day
-    slack_webhook="https://...",  # optional alert
+    slack_webhook="https://...",  # optional Slack alert
 )
 
-# Custom agent — wrap with decorator
+# Wrap your agent with a decorator
 @guard.track
 def run_my_agent():
-    # your agent logic here
     alive = guard.send_event(AgentEvent(
         agent_id="my-sales-agent",
         event_type="llm_call",
@@ -38,12 +37,29 @@ def run_my_agent():
         return
 ```
 
+## Async (FastAPI / async agents)
+
+```python
+from agentguard import AsyncAgentFlare
+
+guard = AsyncAgentFlare(
+    api_key="ag_...",
+    agent_id="my-async-agent",
+    cost_threshold=10.0,
+)
+await guard.start()
+
+@guard.track
+async def run_my_agent():
+    ...
+```
+
 ## LangChain / LangGraph
 
 ```python
-from agentguard import AgentGuard
+from agentguard import AgentFlare
 
-guard = AgentGuard(api_key="ag_...", agent_id="my-agent", cost_threshold=5.0)
+guard = AgentFlare(api_key="ag_...", agent_id="my-agent", cost_threshold=5.0)
 
 # Drop-in callback — tracks every LLM call automatically
 chain = my_chain.with_config(callbacks=[guard.callback])
@@ -62,9 +78,10 @@ result = chain.invoke({"input": "do something"})
 
 ## Dashboard
 
-View live costs, event feed, and manage agents at [agent-guard-nine.vercel.app](https://agent-guard-nine.vercel.app).
+View live costs, event feed, and manage agents at [agent-flare.vercel.app](https://agent-flare.vercel.app).
 
 ## Links
 
-- Dashboard: https://agent-guard-nine.vercel.app
-- Backend API: https://agent-guard-production-dcdd.up.railway.app/docs
+- Homepage: https://agent-flare.vercel.app
+- Docs: https://agent-flare.vercel.app/docs
+- Dashboard: https://agent-flare.vercel.app/dashboard
