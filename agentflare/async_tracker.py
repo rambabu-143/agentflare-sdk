@@ -1,10 +1,11 @@
-"""Core tracking logic — sends events to the AgentGuard backend."""
+"""Async version of AgentFlareTracker — for FastAPI / async agents."""
 
 import httpx
+import functools
 from .models import AgentEvent
 
 
-class AgentGuardTracker:
+class AsyncAgentFlareTracker:
     def __init__(
         self,
         api_key: str,
@@ -17,15 +18,13 @@ class AgentGuardTracker:
         self.agent_id = agent_id
         self.backend_url = backend_url.rstrip("/")
         self._paused = False
+        self._cost_threshold = cost_threshold
+        self._slack_webhook = slack_webhook
 
-        # Register config if threshold provided
-        if cost_threshold is not None:
-            self._register_config(cost_threshold, slack_webhook)
-
-    def _register_config(self, threshold: float, slack_webhook: str | None):
+    async def _register_config(self, threshold: float, slack_webhook: str | None):
         try:
-            with httpx.Client() as client:
-                client.post(
+            async with httpx.AsyncClient() as client:
+                await client.post(
                     f"{self.backend_url}/config",
                     json={
                         "agent_id": self.agent_id,
@@ -36,17 +35,23 @@ class AgentGuardTracker:
                     timeout=5,
                 )
         except Exception:
-            pass  # Don't block agent startup
+            pass
 
-    def send_event(self, event: AgentEvent) -> bool:
+    async def start(self):
+        """Call once after creating the tracker to register config."""
+        if self._cost_threshold is not None:
+            await self._register_config(self._cost_threshold, self._slack_webhook)
+        return self
+
+    async def send_event(self, event: AgentEvent) -> bool:
         """
-        Send event to backend. Returns False if agent is paused (caller should stop).
+        Async send. Returns False if agent is paused.
         """
         if self._paused:
             return False
         try:
-            with httpx.Client() as client:
-                resp = client.post(
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
                     f"{self.backend_url}/events",
                     json=event.model_dump(),
                     headers={"x-api-key": self.api_key},
@@ -57,7 +62,7 @@ class AgentGuardTracker:
                     self._paused = True
                     return False
         except Exception:
-            pass  # Don't crash the agent on network errors
+            pass
         return True
 
     @property
@@ -65,28 +70,19 @@ class AgentGuardTracker:
         return self._paused
 
     def track(self, fn):
-        """Decorator — wrap any function, emit agent_start/agent_end events."""
-        import functools
-
+        """Async decorator — emit agent_start/agent_end around an async function."""
         @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            self.send_event(
-                AgentEvent(agent_id=self.agent_id, event_type="agent_start")
-            )
+        async def wrapper(*args, **kwargs):
+            await self.send_event(AgentEvent(agent_id=self.agent_id, event_type="agent_start"))
             try:
-                result = fn(*args, **kwargs)
-                self.send_event(
-                    AgentEvent(agent_id=self.agent_id, event_type="agent_end")
-                )
+                result = await fn(*args, **kwargs)
+                await self.send_event(AgentEvent(agent_id=self.agent_id, event_type="agent_end"))
                 return result
             except Exception as exc:
-                self.send_event(
-                    AgentEvent(
-                        agent_id=self.agent_id,
-                        event_type="agent_end",
-                        metadata={"error": str(exc)},
-                    )
-                )
+                await self.send_event(AgentEvent(
+                    agent_id=self.agent_id,
+                    event_type="agent_end",
+                    metadata={"error": str(exc)},
+                ))
                 raise
-
         return wrapper

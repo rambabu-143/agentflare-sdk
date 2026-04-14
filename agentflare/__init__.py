@@ -1,22 +1,22 @@
-"""AgentGuard — AI agent cost observability SDK."""
+"""AgentFlare — AI agent cost observability SDK."""
 
-from .tracker import AgentGuardTracker
-from .async_tracker import AsyncAgentGuardTracker
+from .tracker import AgentFlareTracker
+from .async_tracker import AsyncAgentFlareTracker
 from .models import AgentEvent
 
 try:
-    from .callbacks import AgentGuardCallback
+    from .callbacks import AgentFlareCallback
 except ImportError:
-    AgentGuardCallback = None  # type: ignore
+    AgentFlareCallback = None  # type: ignore
 
 
-class AgentGuard(AgentGuardTracker):
+class AgentFlare(AgentFlareTracker):
     """
     Sync entry point. Use for standard Python agents.
 
     Usage::
 
-        guard = AgentGuard(
+        guard = AgentFlare(
             api_key="ag_...",
             agent_id="my-sales-agent",
             cost_threshold=10.0,
@@ -34,18 +34,18 @@ class AgentGuard(AgentGuardTracker):
 
     @property
     def callback(self):
-        if AgentGuardCallback is None:
+        if AgentFlareCallback is None:
             raise ImportError("Install langchain-core to use guard.callback")
-        return AgentGuardCallback(self)
+        return AgentFlareCallback(self)
 
 
-class AsyncAgentGuard(AsyncAgentGuardTracker):
+class AsyncAgentFlare(AsyncAgentFlareTracker):
     """
     Async entry point. Use for FastAPI / async agents.
 
     Usage::
 
-        guard = AsyncAgentGuard(
+        guard = AsyncAgentFlare(
             api_key="ag_...",
             agent_id="my-async-agent",
             cost_threshold=10.0,
@@ -60,11 +60,11 @@ class AsyncAgentGuard(AsyncAgentGuardTracker):
 
 
 __all__ = [
-    "AgentGuard",
-    "AsyncAgentGuard",
-    "AgentGuardTracker",
-    "AsyncAgentGuardTracker",
+    "AgentFlare",
+    "AsyncAgentFlare",
+    "AgentFlareTracker",
+    "AsyncAgentFlareTracker",
     "AgentEvent",
-    "AgentGuardCallback",
+    "AgentFlareCallback",
 ]
 __version__ = "0.2.0"

@@ -1,19 +1,19 @@
-"""LangChain callback handler for AgentGuard."""
+"""LangChain callback handler for AgentFlare."""
 
 from typing import Any
 from uuid import UUID
 
 from .models import AgentEvent
-from .tracker import AgentGuardTracker
+from .tracker import AgentFlareTracker
 
 try:
     from langchain_core.callbacks.base import BaseCallbackHandler
     from langchain_core.outputs import LLMResult
 
-    class AgentGuardCallback(BaseCallbackHandler):
+    class AgentFlareCallback(BaseCallbackHandler):
         """Drop-in LangChain callback that tracks every LLM call."""
 
-        def __init__(self, tracker: AgentGuardTracker):
+        def __init__(self, tracker: AgentFlareTracker):
             super().__init__()
             self.tracker = tracker
 
@@ -85,8 +85,8 @@ try:
             pass
 
 except ImportError:
-    # langchain not installed — AgentGuardCallback unavailable
-    class AgentGuardCallback:  # type: ignore
+    # langchain not installed — AgentFlareCallback unavailable
+    class AgentFlareCallback:  # type: ignore
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "LangChain is not installed. "
